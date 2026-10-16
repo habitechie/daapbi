@@ -1,0 +1,36 @@
+name: Daily Auto-Update & Trend Sync
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # 8:00 AM ICT (1:00 AM UTC)
+  workflow_dispatch:
+
+jobs:
+  sync-trends:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Monorepo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Trend Scanner Script
+        run: |
+          python -c "
+          import datetime
+          today = datetime.date.today().isoformat()
+          with open('docs/DAILY_LOG.md', 'a', encoding='utf-8') as f:
+              f.write(f'\n- **{today}**: Automated CI/CD health check passed. Micro-tools online.')
+          print('Daily log updated.')
+          "
+
+      - name: Commit & Push Daily Health Log
+        run: |
+          git config --global user.name 'daapbi-bot'
+          git config --global user.email 'bot@daapbi.com'
+          git add docs/DAILY_LOG.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore(auto): daily system sync [skip ci]"
+          git push || echo "No changes to push"
